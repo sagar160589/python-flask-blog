@@ -16,10 +16,12 @@ Bootstrap(app)
 
 #Connect to Database
 db_url = os.environ.get('DB_URL')
-db_url.replace('postgres://',
-               'postgresql://',
-               1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+DATABASE_URL = db_url.replace(
+    'postgres://',
+    'postgresql://',
+    1
+)
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
