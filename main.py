@@ -11,17 +11,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Post, PostForm, login_manager, User, LoginUserForm, UserForm
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap(app)
 
-#Connect to Database
-db_url = os.environ.get('DB_URL')
-DATABASE_URL = db_url.replace(
-    'postgres://',
-    'postgresql://',
-    1
-)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+##Connect to Database
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
@@ -33,6 +28,7 @@ all_blogs = []
 
 @login_manager.user_loader
 def load_user(user_id):
+    print(f"The user_id in session is ##### {user_id}")
     return User.query.filter_by(id=user_id).first()
 
 
