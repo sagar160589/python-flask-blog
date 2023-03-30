@@ -3,7 +3,7 @@ import json
 import os
 import smtplib
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,7 +14,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
-#Connect to Database
+##Connect to Database
+
 db_url = os.environ.get('DB_URL')
 DATABASE_URL = db_url.replace(
     'postgres://',
@@ -23,6 +24,14 @@ DATABASE_URL = db_url.replace(
 )
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+@app.before_request
+def make_session_permanent():
+    # Add unique identifier to session cookie name
+    print(request.user_agent.string)
+    session_cookie_name = 'session_' + request.user_agent.string + '_' + request.remote_addr
+    app.config['SESSION_COOKIE_NAME'] = session_cookie_name
+    session.permanent = True
+
 db.init_app(app)
 login_manager.init_app(app)
 app.app_context().push()
