@@ -11,12 +11,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Post, PostForm, login_manager, User, LoginUserForm, UserForm
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
-##Connect to Database
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
+#Connect to Database
+db_url = os.environ.get('DB_URL')
+DATABASE_URL = db_url.replace(
+    'postgres://',
+    'postgresql://',
+    1
+)
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
