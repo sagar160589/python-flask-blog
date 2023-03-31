@@ -2,6 +2,7 @@ import datetime as dt
 import json,html
 import os
 import smtplib
+import uuid
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_bootstrap import Bootstrap
@@ -21,6 +22,7 @@ app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+app.config['SESSION_COOKIE_NAME'] = 'session_' + str(uuid.uuid4())
 
 # Initialize session object
 sess = Session()
