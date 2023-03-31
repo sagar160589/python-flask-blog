@@ -1,47 +1,50 @@
 from flask_login import UserMixin,LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
+from sqlalchemy.orm import relationship
 from wtforms import StringField, TextAreaField, SubmitField, EmailField, PasswordField
 from wtforms.validators import DataRequired
+from flask_ckeditor import CKEditorField
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 
 
 class Post(db.Model):
+    __tablename__ = 'post'
     id = db.Column(db.Integer, primary_key=True)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(250), nullable=False)
-    author = db.Column(db.String(250), nullable=False)
+    author = relationship("User", back_populates="post")
     image_url = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.String(1000), nullable=False)
+    comment = relationship("Comment", cascade="all,delete", back_populates='parent_post')
 
-style = {"style": "font-weight: bold; font-size: medium"}
-
-class PostForm(FlaskForm):
-    title = StringField(label='Title', validators=[DataRequired()], render_kw=style)
-    author = StringField(label='Author', validators=[DataRequired()], render_kw=style)
-    image_url = StringField(label='Image Url', validators=[DataRequired()], render_kw=style)
-    body = TextAreaField(label='Body', validators=[DataRequired()],  render_kw={'class': 'form-control', 'rows': 10, "style": "font-weight: bold; font-size: medium"})
-    submit = SubmitField(label='Submit', render_kw=style)
 
 class User(UserMixin,db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), unique=True,nullable=False)
     email = db.Column(db.String(100))
     password = db.Column(db.String(100))
+    post = relationship("Post", back_populates="author")
+    comment = relationship("Comment", back_populates="comment_author")
 
-class UserForm(FlaskForm):
-    name = StringField(label='Name', validators=[DataRequired()])
-    email = EmailField(label='Email', validators=[DataRequired()])
-    password = PasswordField(label='Password', validators=[DataRequired()])
-    submit = SubmitField(label='Submit')
 
-# class LoginUser(UserMixin,db.Model):
-#     email = db.Column(db.String(100), unique=True)
-#     password = db.Column(db.String(100))
+class Comment(UserMixin,db.Model):
+    __tablename__ = 'comment'
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(500), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+    comment_author = relationship("User", back_populates='comment')
+    parent_post = relationship("Post", back_populates='comment')
 
-class LoginUserForm(FlaskForm):
-    email = EmailField(label='Email', validators=[DataRequired()])
-    password = PasswordField(label='Password', validators=[DataRequired()])
-    submit = SubmitField(label='Submit')
+
+
+
+
+
+

@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 {% extends 'bootstrap/base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% include "header.html" %}
 
 <html lang="en">
-
-{% block styles %}
-  {{super()}}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/blog.css') }}">
-{% endblock %}
 <head>
     <meta charset="UTF-8">
     {% block title %}User Login{% endblock %}
+    {% block script %}
+    {{super()}}
+    <script src="{{ url_for('static', filename='js/scripts.js')}}"></script>
+    {% endblock %}
 </head>
 {% block content %}
+{% include "header.html" %}
 <header class="masthead" style="background-image: url('static/assets/img/login.jpg')">
             <div class="container position-relative px-4 px-lg-5">
                 <div class="row gx-4 gx-lg-5 justify-content-center">
@@ -30,13 +29,16 @@
     <div class="container">
     <h1>Login Form</h1>
     {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for message in messages %}
-         <p>{{ message }}</p>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    {{wtf.quick_form(login)}}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message }}" id="div_flash" >
+        {{ message }}
+        <input type="button" value=&#10006 onclick="removeFlash()" style="float: right">
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+    {{wtf.quick_form(login,novalidate=True, button_map={"submit": "primary"})}}
     </div>
 </div>
 {% include "footer.html" %}

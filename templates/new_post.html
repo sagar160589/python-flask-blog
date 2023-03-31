@@ -28,7 +28,8 @@
         </header>
 <div class="jumbotron">
     <div class="container">
-        {{wtf.quick_form(post)}}
+        {{ ckeditor.load() }}
+        {{wtf.quick_form(post,novalidate=True, button_map={"submit": "primary"})}}
     </div>
 </div>
 </body>

@@ -1,5 +1,5 @@
 import datetime as dt
-import json
+import json,html
 import os
 import smtplib
 
@@ -7,31 +7,32 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_ckeditor import CKEditor
+from flask_gravatar import Gravatar
 
-from models import db, Post, PostForm, login_manager, User, LoginUserForm, UserForm
+from forms import LoginUserForm, UserForm, PostForm, CommentForm
+from models import db, Post, login_manager, User, Comment
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
+CKEditor(app)
+gravatar = Gravatar(app,
+                    size=80,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None)
 
 ##Connect to Database
-
 db_url = os.environ.get('DB_URL')
-DATABASE_URL = db_url.replace(
-    'postgres://',
-    'postgresql://',
-    1
-)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+database_url = db_url.replace('postgres://',
+               'postgresql://',
+               1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-@app.before_request
-def make_session_permanent():
-    # Add unique identifier to session cookie name
-    print(request.user_agent.string)
-    session_cookie_name = 'session_' + request.user_agent.string + '_' + request.remote_addr
-    app.config['SESSION_COOKIE_NAME'] = session_cookie_name
-    session.permanent = True
-
 db.init_app(app)
 login_manager.init_app(app)
 app.app_context().push()
@@ -42,13 +43,13 @@ all_blogs = []
 
 @login_manager.user_loader
 def load_user(user_id):
-    print(f"The user_id in session is ##### {user_id}")
     return User.query.filter_by(id=user_id).first()
 
 
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
+    print(len(all_blogs))
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
 
 
@@ -56,7 +57,7 @@ def home_page():
 def tips_page():
     with open('tips.txt', mode='r') as tips:
         tips_content = tips.readlines()
-    return render_template('tips.html', tips=tips_content)
+    return render_template('tips.html', tips=tips_content, is_logged_in=current_user.is_authenticated)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -72,7 +73,6 @@ def login_page():
                 flash("Invalid username/password. Please try again!")
                 return redirect(url_for('login_page'))
         else:
-            flash('User does not exists. Please register to access blogs')
             return redirect(url_for('register_page'))
     return render_template('login.html', login=login, is_logged_in=current_user.is_authenticated)
 
@@ -127,16 +127,18 @@ def contact_page():
 
 
 @app.route("/post", methods=['GET', 'POST'])
-@login_required
 def add_post():
+    if not current_user.is_authenticated:
+        flash('You need to login to add new blog post. Please login 👇 to continue...!')
+        return redirect(url_for('login_page'))
     post = PostForm()
     if post.validate_on_submit():
         new_post = Post(
-            title=post.title.data,
-            author=post.author.data,
+            title=html.unescape(post.title.data),
+            author=current_user,
             image_url=post.image_url.data,
-            date=dt.datetime.now().date(),
-            body=post.body.data
+            date=dt.datetime.today().strftime("%B %d, %Y"),
+            body=html.unescape(post.body.data.replace('<p>','').replace('</p>','').strip())
         )
         db.session.add(new_post)
         db.session.commit()
@@ -147,33 +149,46 @@ def add_post():
 
 
 @app.route("/edit/<int:number>", methods=['GET', 'POST'])
-@login_required
 def edit_post(number):
     post = PostForm()
     requested_post = Post.query.filter_by(id=number).first()
     if post.validate_on_submit():
-        requested_post.title = post.title.data
-        requested_post.author = post.author.data
+        requested_post.title = html.unescape(post.title.data)
         requested_post.image_url = post.image_url.data
-        requested_post.date = dt.datetime.now().date()
-        requested_post.body = post.body.data
+        requested_post.date = dt.datetime.today().strftime("%B %d, %Y")
+        requested_post.body = html.unescape(post.body.data.replace('<p>','').replace('</p>','').strip())
         db.session.commit()
         return redirect(url_for('home_page'))
     post.title.data = requested_post.title
-    post.author.data = requested_post.author
     post.image_url.data = requested_post.image_url
     post.body.data = requested_post.body
     return render_template('edit_post.html', post=post, is_logged_in=current_user.is_authenticated)
 
 
-@app.route("/blog/<int:number>")
+@app.route("/blog/<int:number>", methods=['GET','POST'])
 def post_page(number):
+    comment = CommentForm()
     requested_post = Post.query.filter_by(id=number).first()
-    return render_template("post.html", blog=requested_post, is_logged_in=current_user.is_authenticated)
+    if comment.validate_on_submit():
+        new_comment = Comment(
+            text = html.unescape(comment.text.data.replace('<p>','').replace('</p>','').strip()),
+            date = dt.datetime.today().strftime("%B %d, %Y"),
+            comment_author = current_user,
+            parent_post = requested_post
+        )
+        db.session.add(new_comment)
+        db.session.commit()
+    return render_template("post.html", blog=requested_post, is_logged_in=current_user.is_authenticated, comment=comment)
+
+@app.route("/delete-blog/<int:number>", methods=['GET','POST'])
+def delete_post(number):
+    requested_post = Post.query.filter_by(id=number).first()
+    db.session.delete(requested_post)
+    db.session.commit()
+    return redirect(url_for('home_page'))
 
 
 @app.route("/logout")
-@login_required
 def logout():
     logout_user()
     return redirect(url_for('home_page'))

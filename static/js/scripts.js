@@ -27,3 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
         scrollPos = currentTop;
     });
 })
+function removeFlash(message) {
+  const element = document.getElementById('div_flash');
+  element.remove();
+}
+

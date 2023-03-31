@@ -1,19 +1,14 @@
 <!DOCTYPE html>
 {% extends 'bootstrap/base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% include "header.html" %}
 
 <html lang="en">
-
-{% block styles %}
-  {{super()}}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/blog.css') }}">
-{% endblock %}
 <head>
     <meta charset="UTF-8">
     {% block title %}Register User{% endblock %}
 </head>
 {% block content %}
+{% include "header.html" %}
 <header class="masthead" style="background-image: url('static/assets/img/register.jpg')">
             <div class="container position-relative px-4 px-lg-5">
                 <div class="row gx-4 gx-lg-5 justify-content-center">
@@ -29,7 +24,7 @@
 <div class="jumbotron">
     <div class="container">
     <h1>Registration Form</h1>
-    {{wtf.quick_form(register)}}
+    {{wtf.quick_form(register ,novalidate=True, button_map={"submit": "primary"})}}
     </div>
 </div>
 {% include "footer.html" %}

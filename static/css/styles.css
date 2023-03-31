@@ -6238,6 +6238,13 @@ textarea.form-control-lg {
   left: 0;
   z-index: 1030;
 }
+.fixed-top-right {
+  position: fixed;
+  top: 0;
+  right: 70;
+  left: 0;
+  z-index: 1030;
+}
 
 .fixed-bottom {
   position: fixed;
