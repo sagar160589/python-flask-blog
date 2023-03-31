@@ -16,17 +16,6 @@ from forms import LoginUserForm, UserForm, PostForm, CommentForm
 from models import db, Post, login_manager, User, Comment
 
 app = Flask(__name__)
-# Configure session settings
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-app.config['SESSION_COOKIE_NAME'] = 'session_' + str(uuid.uuid4())
-
-# Initialize session object
-sess = Session()
-sess.init_app(app)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 CKEditor(app)
