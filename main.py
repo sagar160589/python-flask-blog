@@ -4,7 +4,7 @@ import os
 import smtplib
 import uuid
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -54,7 +54,7 @@ def load_user(user_id):
 
 @app.route('/csrf_token')
 def get_csrf_token():
-    return session.get('_csrf_token')
+    return jsonify(csrf_token={"token":session.get('_csrf_token')})
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
