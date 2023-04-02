@@ -98,6 +98,7 @@ def register_page():
             )
             db.session.add(new_user)
             db.session.commit()
+            session['user_id'] = new_user.id
             login_user(new_user)
             return redirect(url_for('home_page'))
     return render_template('register.html', register=user, is_logged_in=current_user.is_authenticated)
