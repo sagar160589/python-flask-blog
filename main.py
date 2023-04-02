@@ -52,11 +52,12 @@ all_blogs = []
 def load_user(user_id):
     return User.query.filter_by(id=user_id).first()
 
-
+@app.route('/csrf_token')
+def get_csrf_token():
+    return session.get('_csrf_token')
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
-    # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
     if 'user_id' not in session:
         return render_template('index.html', blogs=all_blogs, is_logged_in=False)
