@@ -38,7 +38,7 @@
     {% endfor %}
   {% endif %}
 {% endwith %}
-    {{wtf.quick_form(login,novalidate=True, button_map={"submit": "primary"})}}
+    {{wtf.quick_form(login,csrf_enabled=True,novalidate=True, button_map={"submit": "primary"})}}
     </div>
 </div>
 {% include "footer.html" %}
