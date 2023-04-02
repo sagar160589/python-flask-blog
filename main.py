@@ -199,6 +199,7 @@ def delete_post(number):
 
 @app.route("/logout")
 def logout():
+    session.pop('username', None)
     logout_user()
     return redirect(url_for('home_page'))
 
