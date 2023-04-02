@@ -19,7 +19,7 @@ from models import db, Post, login_manager, User, Comment
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-session['secret_key'] = app.config['SECRET_KEY']
+
 Bootstrap(app)
 CKEditor(app)
 # csrf = CSRFProtect()
@@ -57,8 +57,7 @@ def load_user(user_id):
 def home_page():
     all_blogs = Post.query.all()
     if 'secret_key' not in session:
-        session['secret_key'] = os.urandom(15)
-        app.config['SECRET_KEY'] = session['secret_key']
+        session['secret_key'] = os.environ.get('SECRET_KEY')
     if 'user_id' not in session:
         return render_template('index.html', blogs=all_blogs, is_logged_in=False)
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
