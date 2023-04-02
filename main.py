@@ -16,6 +16,7 @@ from forms import LoginUserForm, UserForm, PostForm, CommentForm
 from models import db, Post, login_manager, User, Comment
 
 app = Flask(__name__)
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 CKEditor(app)
@@ -51,7 +52,8 @@ def load_user(user_id):
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
-    print(len(all_blogs))
+    if 'user_id' not in session:
+        return render_template('index.html', blogs=all_blogs, is_logged_in=False)
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
 
 
@@ -69,6 +71,7 @@ def login_page():
         user = User.query.filter_by(email=login.email.data).first()
         if user:
             if check_password_hash(user.password, login.password.data):
+                session['user_id'] = user.id
                 login_user(user)
                 return redirect(url_for('home_page'))
             else:
