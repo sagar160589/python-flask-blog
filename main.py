@@ -19,6 +19,7 @@ from models import db, Post, login_manager, User, Comment
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+session['secret_key'] = app.config['SECRET_KEY']
 Bootstrap(app)
 CKEditor(app)
 # csrf = CSRFProtect()
