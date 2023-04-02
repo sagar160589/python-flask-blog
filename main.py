@@ -55,6 +55,9 @@ def load_user(user_id):
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
+    if 'secret_key' not in session:
+        session['secret_key'] = os.urandom(15)
+        app.config['SECRET_KEY'] = session['secret_key']
     if 'user_id' not in session:
         return render_template('index.html', blogs=all_blogs, is_logged_in=False)
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
