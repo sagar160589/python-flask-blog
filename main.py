@@ -22,7 +22,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 Bootstrap(app)
 CKEditor(app)
-csrf = CSRFProtect()
+# csrf = CSRFProtect()
 gravatar = Gravatar(app,
                     size=80,
                     rating='g',
@@ -41,7 +41,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
-csrf.init_app(app)
+csrf = CSRFProtect(app)
 app.app_context().push()
 db.create_all()
 
@@ -52,13 +52,9 @@ all_blogs = []
 def load_user(user_id):
     return User.query.filter_by(id=user_id).first()
 
-@app.route('/csrf_token')
-def get_csrf_token():
-    return jsonify(csrf_token={"token":session.get('_csrf_token')})
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
-
     if 'user_id' not in session:
         return render_template('index.html', blogs=all_blogs, is_logged_in=False)
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
@@ -78,8 +74,8 @@ def login_page():
         user = User.query.filter_by(email=login.email.data).first()
         if user:
             if check_password_hash(user.password, login.password.data):
-                session['user_id'] = user.id
                 login_user(user)
+                session['user_id'] = user.id
                 return redirect(url_for('home_page'))
             else:
                 flash("Invalid username/password. Please try again!")
@@ -105,8 +101,8 @@ def register_page():
             )
             db.session.add(new_user)
             db.session.commit()
-            session['user_id'] = new_user.id
             login_user(new_user)
+            session['user_id'] = new_user.id
             return redirect(url_for('home_page'))
     if 'user_id' not in session:
         return render_template('register.html', register=user, is_logged_in=False)
@@ -205,8 +201,8 @@ def delete_post(number):
 
 @app.route("/logout")
 def logout():
-    session.pop('user_id', None)
     logout_user()
+    session.pop('user_id', None)
     return redirect(url_for('home_page'))
 
 
