@@ -107,6 +107,8 @@ def register_page():
             session['user_id'] = new_user.id
             login_user(new_user)
             return redirect(url_for('home_page'))
+    if 'user_id' not in session:
+        return render_template('register.html', register=user, is_logged_in=False)
     return render_template('register.html', register=user, is_logged_in=current_user.is_authenticated)
 
 
