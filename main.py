@@ -56,9 +56,7 @@ def load_user(user_id):
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
-    if 'secret_key' not in session:
-        session['secret_key'] = os.environ.get('SECRET_KEY')
-        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
     if 'user_id' not in session:
         return render_template('index.html', blogs=all_blogs, is_logged_in=False)
