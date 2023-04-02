@@ -22,7 +22,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 Bootstrap(app)
 CKEditor(app)
-# csrf = CSRFProtect()
+csrf = CSRFProtect()
 gravatar = Gravatar(app,
                     size=80,
                     rating='g',
@@ -41,7 +41,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
-# csrf.init_app(app)
+csrf.init_app(app)
 app.app_context().push()
 db.create_all()
 
