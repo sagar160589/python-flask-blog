@@ -75,6 +75,8 @@ def login_page():
         if user:
             if check_password_hash(user.password, login.password.data):
                 session['user_id'] = user.id
+                session['secret_key'] = os.urandom(16)
+                session['csrf_token'] = os.urandom(16)
                 login_user(user)
                 return redirect(url_for('home_page'))
             else:
@@ -102,6 +104,8 @@ def register_page():
             db.session.add(new_user)
             db.session.commit()
             session['user_id'] = new_user.id
+            session['secret_key'] = os.urandom(16)
+            session['csrf_token'] = os.urandom(16)
             login_user(new_user)
             return redirect(url_for('home_page'))
     return render_template('register.html', register=user, is_logged_in=current_user.is_authenticated)
@@ -200,6 +204,8 @@ def delete_post(number):
 @app.route("/logout")
 def logout():
     session.pop('user_id', None)
+    session.pop('secret_key', None)
+    session.pop('csrf_token', None)
     logout_user()
     return redirect(url_for('home_page'))
 
