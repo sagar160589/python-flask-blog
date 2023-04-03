@@ -46,7 +46,6 @@ with app.app_context():
     db.init_app(app)
     login_manager.init_app(app)
     # csrf = CSRFProtect(app)
-    app.app_context().push()
     db.create_all()
 
     all_blogs = []
