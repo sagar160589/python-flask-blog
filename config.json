@@ -1,6 +1,6 @@
 {
-  "from_email": "sagar1689python@gmail.com",
-  "password": "upntsuqjgytyatyu",
+  "from_email": "from_email",
+  "password": "from_pwd",
   "to_email": "to_email",
   "name": "Tom"
 }
