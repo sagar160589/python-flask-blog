@@ -2,17 +2,14 @@ import datetime as dt
 import json,html
 import os
 import smtplib
-import uuid
 
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
-from flask_login import login_user, login_required, logout_user, current_user
+from flask_login import login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_ckeditor import CKEditor
 from flask_gravatar import Gravatar
-from flask_session import Session
-from flask_wtf.csrf import CSRFProtect
 
 from forms import LoginUserForm, UserForm, PostForm, CommentForm
 from models import db, Post, login_manager, User, Comment
@@ -20,13 +17,10 @@ app = Flask(__name__)
 
 
 with app.app_context():
-
-    # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
     Bootstrap(app)
     CKEditor(app)
-    # csrf = CSRFProtect()
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -45,7 +39,6 @@ with app.app_context():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
-    # csrf = CSRFProtect(app)
     db.create_all()
 
     all_blogs = []
@@ -57,8 +50,8 @@ def load_user(user_id):
 @app.route('/')
 def home_page():
     all_blogs = Post.query.all()
-    if 'user_id' not in session:
-        return render_template('index.html', blogs=all_blogs, is_logged_in=False)
+    # if 'user_id' not in session:
+    #     return render_template('index.html', blogs=all_blogs, is_logged_in=False)
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
 
 
@@ -77,7 +70,7 @@ def login_page():
         if user:
             if check_password_hash(user.password, login.password.data):
                 login_user(user)
-                session['user_id'] = user.id
+                # session['user_id'] = user.id
                 return redirect(url_for('home_page'))
             else:
                 flash("Invalid username/password. Please try again!")
@@ -106,8 +99,8 @@ def register_page():
             login_user(new_user)
             session['user_id'] = new_user.id
             return redirect(url_for('home_page'))
-    if 'user_id' not in session:
-        return render_template('register.html', register=user, is_logged_in=False)
+    # if 'user_id' not in session:
+    #     return render_template('register.html', register=user, is_logged_in=False)
     return render_template('register.html', register=user, is_logged_in=current_user.is_authenticated)
 
 
