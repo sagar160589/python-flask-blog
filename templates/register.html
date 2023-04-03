@@ -22,11 +22,12 @@
             </div>
         </header>
 
-{% include "footer.html" %}
-{% endblock %}
-</html><div class="jumbotron">
+<div class="jumbotron">
     <div class="container">
     <h1>Registration Form</h1>
     {{wtf.quick_form(register ,novalidate=True, button_map={"submit": "primary"})}}
     </div>
 </div>
+{% include "footer.html" %}
+{% endblock %}
+</html>
