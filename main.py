@@ -4,6 +4,7 @@ import os
 import smtplib
 import uuid
 
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, login_required, logout_user, current_user
@@ -15,38 +16,40 @@ from flask_wtf.csrf import CSRFProtect
 
 from forms import LoginUserForm, UserForm, PostForm, CommentForm
 from models import db, Post, login_manager, User, Comment
-
 app = Flask(__name__)
-# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
-Bootstrap(app)
-CKEditor(app)
-# csrf = CSRFProtect()
-gravatar = Gravatar(app,
-                    size=80,
-                    rating='g',
-                    default='retro',
-                    force_default=False,
-                    force_lower=False,
-                    use_ssl=False,
-                    base_url=None)
 
-##Connect to Database
-db_url = os.environ.get('DB_URL')
-database_url = db_url.replace('postgres://',
-               'postgresql://',
-               1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
-login_manager.init_app(app)
-csrf = CSRFProtect(app)
-app.app_context().push()
-db.create_all()
+with app.app_context():
 
-all_blogs = []
+    # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
+    Bootstrap(app)
+    CKEditor(app)
+    # csrf = CSRFProtect()
+    gravatar = Gravatar(app,
+                        size=80,
+                        rating='g',
+                        default='retro',
+                        force_default=False,
+                        force_lower=False,
+                        use_ssl=False,
+                        base_url=None)
+
+    ##Connect to Database
+    db_url = os.environ.get('DB_URL')
+    database_url = db_url.replace('postgres://',
+                                  'postgresql://',
+                                  1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    login_manager.init_app(app)
+    # csrf = CSRFProtect(app)
+    app.app_context().push()
+    db.create_all()
+
+    all_blogs = []
 
 @login_manager.user_loader
 def load_user(user_id):
