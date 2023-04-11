@@ -68,5 +68,9 @@ $("#chatbot-input").keypress(function(e) {
 					}
 				});
 
+				$("#buttonInput").click(function() {
+					getBotResponse();
+				})
+
 
 
