@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <link href="{{ url_for('static', filename='css/blog.css')}}" rel="stylesheet">
+</head>
     {% include "header.html" %}
         <!-- Page Header-->
         <header class="masthead" style="background-image: url('static/assets/img/home-bg.jpg')">
@@ -38,6 +41,9 @@
                 </div>
             </div>
         </div>
-        <!-- Footer-->
+
+    {% include "chatbot.html" %}
+
+
         {% include "footer.html" %}
 </html>

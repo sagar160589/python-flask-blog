@@ -3,7 +3,7 @@ import json,html
 import os
 import smtplib
 
-
+import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, logout_user, current_user
@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-
+    #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
     Bootstrap(app)
     CKEditor(app)
     gravatar = Gravatar(app,
@@ -36,6 +36,7 @@ with app.app_context():
                                   'postgresql://',
                                   1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+   # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
@@ -46,6 +47,18 @@ with app.app_context():
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.filter_by(id=user_id).first()
+
+@app.route("/chatbot", methods=['GET','POST'])
+def get_bot_response():
+    userText = str(request.form['message'])
+    print(userText)
+    data = json.dumps({"sender" : "Rasa","message" : userText})
+    headers = {'Content-type' : 'application/json', 'Accept' : 'text/plain'}
+    response = requests.post('http://localhost:5005/webhooks/rest/webhook', data = data, headers = headers)
+    response = response.json()
+    print(response)
+    return str(response[0]['text'])
+
 
 @app.route('/')
 def home_page():

@@ -1,8 +1,8 @@
 /* This CSS file will need to be added to the styling of
 your web pages for the styles to be rendered. */
 
-body {
-background-color: #333;
+body{
+background-color: white;
 color: white;
 }
 
@@ -23,3 +23,22 @@ a {
     margin-top: 20px;
     padding-top: 20px;
 }
+
+.disabled-link {
+  pointer-events: none;
+}
+div.ex1 {
+  background-color: lightblue;
+  width: 110px;
+  height: 110px;
+  overflow: scroll;
+}
+.chatbot-body {
+  height: 300px; /* or any desired height */
+  overflow-y: auto;
+}
+
+4
+
+
+

@@ -31,4 +31,42 @@ function removeFlash(message) {
   const element = document.getElementById('div_flash');
   element.remove();
 }
+function getBotResponse() {
+event.preventDefault();
+          var userMessage = $("#chatbot-input").val();
+          const el = document.getElementById('chatbot-body');
+
+          $("#chatbot-input").val("");
+          $("#chatbot-body").append(`
+            <div class="small p-2 ms-3 mb-1 rounded-3" style="background-color: blue;">
+              <p><b>User:</b> ${userMessage}</p>
+            </div>
+          `);
+          if (el) {
+                          el.scrollTop = el.scrollHeight;
+                   }
+          $.ajax({
+            url: "/chatbot",
+            method: "POST",
+            data: {message: userMessage},
+            success: function(response) {
+              $("#chatbot-body").append(`
+                <div class="small p-2 ms-3 mb-1 rounded-3" style="background-color: green;">
+                  <p><b>Bot:</b> ${response}</p>
+                </div>
+              `);
+              if (el) {
+                          el.scrollTop = el.scrollHeight;
+                      }
+            }
+          });
+}
+
+$("#chatbot-input").keypress(function(e) {
+					if(e.which == 13) {
+						getBotResponse();
+					}
+				});
+
+
 
