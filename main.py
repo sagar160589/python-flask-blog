@@ -54,7 +54,7 @@ def get_bot_response():
     print(userText)
     data = json.dumps({"sender" : "Rasa","message" : userText})
     headers = {'Content-type' : 'application/json', 'Accept' : 'text/plain'}
-    response = requests.post('http://localhost:5005/webhooks/rest/webhook', data = data, headers = headers)
+    response = requests.post('https://blog-chatbot.onrender.com:5005/webhooks/rest/webhook', data = data, headers = headers)
     response = response.json()
     print(response)
     return str(response[0]['text'])
