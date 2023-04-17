@@ -20,8 +20,8 @@ app = Flask(__name__)
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
     #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
-    REDIS_HOST = os.environ('REDIS-HOST')
-    REDIS_PORT = os.environ('REDIS-PORT')
+    REDIS_HOST = os.environ.get('REDIS-HOST')
+    REDIS_PORT = os.environ.get('REDIS-PORT')
     Bootstrap(app)
     CKEditor(app)
     r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
