@@ -4,6 +4,7 @@ import smtplib
 import redis
 import requests
 import os
+import time
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, logout_user, current_user
@@ -19,9 +20,12 @@ app = Flask(__name__)
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
     #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+    REDIS_HOST = os.environ('REDIS-HOST')
+    REDIS_PORT = os.environ('REDIS-PORT')
     Bootstrap(app)
     CKEditor(app)
-    r = redis.StrictRedis(host='red-cguhacqut4mcfrikt8bg', port=6379, db=0)
+    r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    #r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -67,10 +71,22 @@ def get_bot_response():
 def home_page():
     if not r.exists('blogs'):
         print('No blogs found in cache')
+        '''
+            To check the time difference when blogs are retrieved from database
+            Time difference calculated was - 0.18599557876586914
+        '''
+        starttime = time.time()
         all_blogs = Post.query.all()
+        print(f"Time difference while fetching from database: {time.time() - starttime}")
         save_blog_in_cache(all_blogs)
     else:
+        '''
+            To check the tie difference when blogs are retrieved from cache
+            Time difference calculated was - 0.010001897811889648
+        '''
+        starttime = time.time()
         all_blogs = get_blog_from_cache()
+        print(f"Time difference while getting details from cache: {time.time() - starttime}")
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
 
 
