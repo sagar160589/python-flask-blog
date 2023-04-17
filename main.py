@@ -1,8 +1,7 @@
 import datetime as dt
-import json,html
-import os
+import json, html
 import smtplib
-
+import redis
 import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
@@ -13,14 +12,15 @@ from flask_gravatar import Gravatar
 
 from forms import LoginUserForm, UserForm, PostForm, CommentForm
 from models import db, Post, login_manager, User, Comment
+
 app = Flask(__name__)
 
-
 with app.app_context():
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+    # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
     Bootstrap(app)
     CKEditor(app)
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -31,30 +31,32 @@ with app.app_context():
                         base_url=None)
 
     ##Connect to Database
-    db_url = os.environ.get('DB_URL')
-    database_url = db_url.replace('postgres://',
-                                  'postgresql://',
-                                  1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-   # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
+    # db_url = os.environ.get('DB_URL')
+    # database_url = db_url.replace('postgres://',
+    #                               'postgresql://',
+    #                               1)
+    # app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
     db.create_all()
-
     all_blogs = []
+
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.filter_by(id=user_id).first()
+    user = get_user_from_cache(r.get(user_id))
+    return user
 
-@app.route("/chatbot", methods=['GET','POST'])
+
+@app.route("/chatbot", methods=['GET', 'POST'])
 def get_bot_response():
-    userText = str(request.form['message'])
-    print(userText)
-    data = json.dumps({"sender" : "Rasa","message" : userText})
-    headers = {'Content-type' : 'application/json', 'Accept' : 'text/plain'}
-    response = requests.post('https://blog-chatbot.onrender.com/webhooks/rest/webhook', data = data, headers = headers)
+    text = str(request.form['message'])
+    print(text)
+    data = json.dumps({"sender": "Rasa", "message": text})
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    response = requests.post('https://blog-chatbot.onrender.com/webhooks/rest/webhook', data=data, headers=headers)
     response = response.json()
     print(response)
     return str(response[0]['text'])
@@ -62,9 +64,12 @@ def get_bot_response():
 
 @app.route('/')
 def home_page():
-    all_blogs = Post.query.all()
-    # if 'user_id' not in session:
-    #     return render_template('index.html', blogs=all_blogs, is_logged_in=False)
+    if not r.exists('blogs'):
+        print('No blogs found in cache')
+        all_blogs = Post.query.all()
+        save_blog_in_cache(all_blogs)
+    else:
+        all_blogs = get_blog_from_cache()
     return render_template('index.html', blogs=all_blogs, is_logged_in=current_user.is_authenticated)
 
 
@@ -83,8 +88,13 @@ def login_page():
         if user:
             if check_password_hash(user.password, login.password.data):
                 login_user(user)
-                # session['user_id'] = user.id
-                return redirect(url_for('home_page'))
+                r.set(user.id, save_user_in_cache(user))
+                if session.get('number') is None:
+                    return redirect(url_for('home_page'))
+                else:
+                    number = session.get('number')
+                    next =request.host_url+"blog/"+str(number)
+                    return redirect(next or url_for('home_page'))
             else:
                 flash("Invalid username/password. Please try again!")
                 return redirect(url_for('login_page'))
@@ -110,10 +120,8 @@ def register_page():
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user)
-            session['user_id'] = new_user.id
+            r.set(new_user.id, save_user_in_cache(new_user))
             return redirect(url_for('home_page'))
-    # if 'user_id' not in session:
-    #     return render_template('register.html', register=user, is_logged_in=False)
     return render_template('register.html', register=user, is_logged_in=current_user.is_authenticated)
 
 
@@ -152,16 +160,19 @@ def add_post():
         return redirect(url_for('login_page'))
     post = PostForm()
     if post.validate_on_submit():
+        user = User.query.filter_by(id=current_user.id).first()
         new_post = Post(
             title=html.unescape(post.title.data),
-            author=current_user,
+            author=user,
             image_url=post.image_url.data,
             date=dt.datetime.today().strftime("%B %d, %Y"),
-            body=html.unescape(post.body.data.replace('<p>','').replace('</p>','').strip())
+            body=html.unescape(post.body.data.replace('<p>', '').replace('</p>', '').strip())
         )
         db.session.add(new_post)
         db.session.commit()
+        all_blogs = get_blog_from_cache()
         all_blogs.append(new_post)
+        save_blog_in_cache(all_blogs)  # Save in cache eagerly
         return redirect(url_for('home_page'))
     else:
         return render_template('new_post.html', post=post, is_logged_in=current_user.is_authenticated)
@@ -172,10 +183,14 @@ def edit_post(number):
     post = PostForm()
     requested_post = Post.query.filter_by(id=number).first()
     if post.validate_on_submit():
+        if not current_user.is_authenticated:
+            session['number'] = number
+            flash('You need to login to edit your post. Please login 👇 to continue...!')
+            return redirect(url_for('login_page'))
         requested_post.title = html.unescape(post.title.data)
         requested_post.image_url = post.image_url.data
         requested_post.date = dt.datetime.today().strftime("%B %d, %Y")
-        requested_post.body = html.unescape(post.body.data.replace('<p>','').replace('</p>','').strip())
+        requested_post.body = html.unescape(post.body.data.replace('<p>', '').replace('</p>', '').strip())
         db.session.commit()
         return redirect(url_for('home_page'))
     post.title.data = requested_post.title
@@ -184,34 +199,71 @@ def edit_post(number):
     return render_template('edit_post.html', post=post, is_logged_in=current_user.is_authenticated)
 
 
-@app.route("/blog/<int:number>", methods=['GET','POST'])
+@app.route("/blog/<int:number>", methods=['GET', 'POST'])
 def post_page(number):
     comment = CommentForm()
     requested_post = Post.query.filter_by(id=number).first()
     if comment.validate_on_submit():
+        if not current_user.is_authenticated:
+            session['number'] = number
+            flash('You need to login to add comments to any post. Please login 👇 to continue...!')
+            return redirect(url_for('login_page'))
+        user = User.query.filter_by(id=current_user.id).first()
         new_comment = Comment(
-            text = html.unescape(comment.text.data.replace('<p>','').replace('</p>','').strip()),
-            date = dt.datetime.today().strftime("%B %d, %Y"),
-            comment_author = current_user,
-            parent_post = requested_post
+            text=html.unescape(comment.text.data.replace('<p>', '').replace('</p>', '').strip()),
+            date=dt.datetime.today().strftime("%B %d, %Y"),
+            comment_author=user,
+            parent_post=requested_post
         )
         db.session.add(new_comment)
         db.session.commit()
-    return render_template("post.html", blog=requested_post, is_logged_in=current_user.is_authenticated, comment=comment)
+    return render_template("post.html", blog=requested_post, is_logged_in=current_user.is_authenticated,
+                           comment=comment)
 
-@app.route("/delete-blog/<int:number>", methods=['GET','POST'])
+
+@app.route("/delete-blog/<int:number>", methods=['GET', 'POST'])
 def delete_post(number):
     requested_post = Post.query.filter_by(id=number).first()
     db.session.delete(requested_post)
     db.session.commit()
+    all_blogs = Post.query.all()
+    save_blog_in_cache(all_blogs)
     return redirect(url_for('home_page'))
 
 
 @app.route("/logout")
 def logout():
+    print(f"Deleting user from redis with user_id: {current_user.id}")
+    r.delete(current_user.id)
+    session.pop('number', None)
     logout_user()
-    session.pop('user_id', None)
     return redirect(url_for('home_page'))
+
+
+def save_user_in_cache(user):
+    return json.dumps({'id': user.id, 'name': user.name, 'email': user.email, 'password': user.password})
+
+
+def get_user_from_cache(user):
+    user_des = json.loads(user)
+    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'], password=user_des['password'])
+
+
+def save_blog_in_cache(all_blogs):
+    all_blogs_list = [{"id": blog.id, "title": blog.title, "author_id": blog.author_id,
+                       "image_url": blog.image_url, "date": blog.date,
+                       "body": blog.body} for blog in all_blogs]
+    r.lpush('blogs', json.dumps(all_blogs_list))
+
+
+def get_blog_from_cache():
+    print('Blogs found in cache')
+    blogs_ser = r.lrange('blogs', 0, -1)
+    all_blogs_des = [json.loads(blog) for blog in blogs_ser]
+    all_blogs = [Post(id=blog['id'], title=blog['title'], author_id=blog['author_id'], image_url=blog['image_url'],
+                      date=blog['date'], body=blog['body']) for blog in all_blogs_des[0]]
+    r.expire('blogs', 120)
+    return all_blogs
 
 
 if __name__ == ('__main__'):
