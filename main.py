@@ -3,6 +3,7 @@ import json, html
 import smtplib
 import redis
 import requests
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, logout_user, current_user
@@ -16,11 +17,11 @@ from models import db, Post, login_manager, User, Comment
 app = Flask(__name__)
 
 with app.app_context():
-    # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
     Bootstrap(app)
     CKEditor(app)
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r = redis.StrictRedis(host='red-cguhacqut4mcfrikt8bg', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -31,12 +32,12 @@ with app.app_context():
                         base_url=None)
 
     ##Connect to Database
-    # db_url = os.environ.get('DB_URL')
-    # database_url = db_url.replace('postgres://',
-    #                               'postgresql://',
-    #                               1)
-    # app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
+    db_url = os.environ.get('DB_URL')
+    database_url = db_url.replace('postgres://',
+                                  'postgresql://',
+                                  1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
