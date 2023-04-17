@@ -20,11 +20,13 @@ app = Flask(__name__)
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
     #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
-    REDIS_HOST = os.environ.get('REDIS-HOST')
-    REDIS_PORT = os.environ.get('REDIS-PORT')
+    # # REDIS_HOST = os.environ.get('REDIS-HOST')
+    # # REDIS_PORT = os.environ.get('REDIS-PORT')
+    # REDIS_HOST = 'red-cguk152ut4mcfrj3kha0'
+    # REDIS_PORT = '6379'
     Bootstrap(app)
     CKEditor(app)
-    r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    r = redis.StrictRedis(host='red-cguk152ut4mcfrj3kha0', port=6379, db=0)
     #r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
