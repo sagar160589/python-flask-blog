@@ -26,7 +26,7 @@ with app.app_context():
     # REDIS_PORT = '6379'
     Bootstrap(app)
     CKEditor(app)
-    r = redis.StrictRedis(host='red-cguk152ut4mcfrj3kha0', port=6379, db=0)
+    r = redis.StrictRedis(host='red-################', port=6379, db=0)
     #r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
