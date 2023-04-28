@@ -31,15 +31,6 @@ class User(UserMixin,db.Model):
     post = relationship("Post", back_populates="author")
     comment = relationship("Comment", back_populates="comment_author")
 
-class User1(UserMixin,db.Model):
-    __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), unique=True,nullable=False)
-    email = db.Column(db.String(100))
-    display_pic = db.Column(db.String(100))
-    post = relationship("Post", back_populates="author")
-    comment = relationship("Comment", back_populates="comment_author")
-
 
 class Comment(UserMixin,db.Model):
     __tablename__ = 'comment'

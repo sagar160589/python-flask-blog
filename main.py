@@ -141,7 +141,7 @@ def callback():
         users_name = userinfo_response.json()["given_name"]
     else:
         return "User email not available or not verified by Google.", 400
-    user = User1(id=unique_id,name=users_name,email=users_email, display_pic=picture)
+    user = User(id=unique_id,name=users_name,email=users_email)
     login_user(user)
     r.set(user.id, save_user_in_cache(user))
     return redirect(url_for('home_page'))
