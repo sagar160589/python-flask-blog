@@ -14,7 +14,7 @@ from flask_ckeditor import CKEditor
 from flask_gravatar import Gravatar
 
 from forms import LoginUserForm, UserForm, PostForm, CommentForm
-from models import db, Post, login_manager, User, Comment
+from models import db, Post, login_manager, User, Comment, User1
 
 app = Flask(__name__)
 
@@ -141,9 +141,10 @@ def callback():
         users_name = userinfo_response.json()["given_name"]
     else:
         return "User email not available or not verified by Google.", 400
-    user = User(id=unique_id,name=users_name,email=users_email)
+    user = User1(id=unique_id,name=users_name,email=users_email, display_pic=picture)
     login_user(user)
     r.set(user.id, save_user_in_cache(user))
+    return redirect(url_for('home_page'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
