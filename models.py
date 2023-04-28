@@ -13,7 +13,7 @@ login_manager = LoginManager()
 class Post(db.Model):
     __tablename__ = 'post'
     id = db.Column(db.Integer, primary_key=True)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    author_id = db.Column(db.String(200), db.ForeignKey('user.id'))
     title = db.Column(db.String(250), nullable=False)
     author = relationship("User", back_populates="post")
     image_url = db.Column(db.String(250), nullable=False)
@@ -37,7 +37,7 @@ class Comment(UserMixin,db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(500), nullable=False)
     date = db.Column(db.String(250), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    author_id = db.Column(db.String(200), db.ForeignKey('user.id'))
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
     comment_author = relationship("User", back_populates='comment')
     parent_post = relationship("Post", back_populates='comment')
