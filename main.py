@@ -8,7 +8,6 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, logout_user, current_user
-from google.auth.exceptions import RefreshError
 from oauthlib.oauth2 import WebApplicationClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_ckeditor import CKEditor
@@ -21,14 +20,14 @@ app = Flask(__name__)
 
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+    # app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
     Bootstrap(app)
     CKEditor(app)
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DISCOVERY_URL = os.environ.get("GOOGLE_DISCOVERY_URL")
     r = redis.StrictRedis(host='red-cguk152ut4mcfrj3kha0', port=6379, db=0)
-    #r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    # r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -44,7 +43,7 @@ with app.app_context():
                                   'postgresql://',
                                   1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
@@ -53,10 +52,8 @@ with app.app_context():
     all_blogs = []
 
 
-
 def get_google_cfg():
     return requests.get(GOOGLE_DISCOVERY_URL).json()
-
 
 
 @login_manager.user_loader
@@ -104,47 +101,42 @@ def tips_page():
         tips_content = tips.readlines()
     return render_template('tips.html', tips=tips_content, is_logged_in=current_user.is_authenticated)
 
-#Get code from google to allbackurl
+
+# Get code from google to allbackurl
 @app.route("/login-google/callback")
 def callback():
-    try:
-        code = request.args.get("code")
-        google_provider_cfg = get_google_cfg()
-        token_endpoint = google_provider_cfg["token_endpoint"]
-        ## comment for local
-        token_url, headers, body = client.prepare_token_request(
-            token_endpoint,
-            authorization_response=request.url,
-            redirect_url=request.base_url,
-            code=code
-        )
-        token_response = requests.post(
-            token_url,
-            headers=headers,
-            data=body,
-            auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
-        )
-        client.parse_request_body_response(json.dumps(token_response.json()))
-        userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-        uri, headers, body = client.add_token(userinfo_endpoint)
-        userinfo_response = requests.get(uri, headers=headers, data=body)
-        if userinfo_response.json().get("email_verified"):
-            unique_id = userinfo_response.json()["sub"]
-            users_email = userinfo_response.json()["email"]
-            picture = userinfo_response.json()["picture"]
-            users_name = userinfo_response.json()["given_name"]
-        else:
-            return "User email not available or not verified by Google.", 400
-        user = User(id=unique_id,name=users_name,email=users_email,profile_pic=picture)
-        login_user(user)
-        r.set(user.id, save_user_in_cache(user))
-        return redirect(url_for('home_page'))
-    except RefreshError:
-        print("Error from Google trying again in callback")
-        time.sleep(2)
-        callback()
+    code = request.args.get("code")
+    google_provider_cfg = get_google_cfg()
+    token_endpoint = google_provider_cfg["token_endpoint"]
+    ## comment for local
+    token_url, headers, body = client.prepare_token_request(
+        token_endpoint,
+        authorization_response=request.url,
+        redirect_url=request.base_url,
+        code=code
+    )
+    token_response = requests.post(
+        token_url,
+        headers=headers,
+        data=body,
+        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+    )
+    client.parse_request_body_response(json.dumps(token_response.json()))
+    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+    uri, headers, body = client.add_token(userinfo_endpoint)
+    userinfo_response = requests.get(uri, headers=headers, data=body)
+    if userinfo_response.json().get("email_verified"):
+        unique_id = userinfo_response.json()["sub"]
+        users_email = userinfo_response.json()["email"]
+        picture = userinfo_response.json()["picture"]
+        users_name = userinfo_response.json()["given_name"]
     else:
-        print("Error from Google in callback")
+        return "User email not available or not verified by Google.", 400
+    user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
+    login_user(user)
+    r.set(user.id, save_user_in_cache(user))
+    return redirect(url_for('home_page'))
+
 
 # @app.route('/old-login', methods=['GET', 'POST'])
 # def login_page():
@@ -182,21 +174,15 @@ def callback():
 def login_page():
     return render_template('login.html')
 
+
 @app.route('/login-google', methods=['GET', 'POST'])
 def google_login_page():
-    try:
-        google_provider_cfg = get_google_cfg()
-        authorization_endpoint = google_provider_cfg['authorization_endpoint']
-        request_uri = client.prepare_request_uri(authorization_endpoint,
-                                                 redirect_uri=request.base_url + "/callback",
-                                                 scope=["openid", "email", "profile"])
-        return redirect(request_uri)
-    except RefreshError:
-        print("Error from Google trying again")
-        time.sleep(2)
-        google_login_page()
-    else:
-        print("Error from Google try again")
+    google_provider_cfg = get_google_cfg()
+    authorization_endpoint = google_provider_cfg['authorization_endpoint']
+    request_uri = client.prepare_request_uri(authorization_endpoint,
+                                             redirect_uri=request.base_url + "/callback",
+                                             scope=["openid", "email", "profile"])
+    return redirect(request_uri)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -342,7 +328,7 @@ def save_user_in_cache(user):
 
 def get_user_from_cache(user):
     user_des = json.loads(user)
-    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'], profile_pic=user_des['profile_pic'] )
+    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'], profile_pic=user_des['profile_pic'])
 
 
 def save_blog_in_cache(all_blogs):
