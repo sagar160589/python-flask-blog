@@ -8,6 +8,7 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_bootstrap import Bootstrap
 from flask_login import login_user, logout_user, current_user
+from google.auth.exceptions import RefreshError
 from oauthlib.oauth2 import WebApplicationClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_ckeditor import CKEditor
@@ -67,12 +68,10 @@ def load_user(user_id):
 @app.route("/chatbot", methods=['GET', 'POST'])
 def get_bot_response():
     text = str(request.form['message'])
-    print(text)
     data = json.dumps({"sender": "Rasa", "message": text})
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     response = requests.post('https://blog-chatbot.onrender.com/webhooks/rest/webhook', data=data, headers=headers)
     response = response.json()
-    print(response)
     return str(response[0]['text'])
 
 
@@ -106,76 +105,98 @@ def tips_page():
     return render_template('tips.html', tips=tips_content, is_logged_in=current_user.is_authenticated)
 
 #Get code from google to allbackurl
-@app.route("/login/callback")
+@app.route("/login-google/callback")
 def callback():
-    code = request.args.get("code")
-    print(f"Code from google: {code}")
-    google_provider_cfg = get_google_cfg()
-    token_endpoint = google_provider_cfg["token_endpoint"]
-    print(f"token endpoint: {token_endpoint}")
-    print(f"request.url after auth: {request.url}")
-    token_url, headers, body = client.prepare_token_request(
-        token_endpoint,
-        authorization_response=request.url,
-        redirect_url=request.base_url,
-        code=code
-    )
-    print(f"token url: {token_url}")
-    print(f"headers: {headers}")
-    print(f"body: {body}")
-    token_response = requests.post(
-        token_url,
-        headers=headers,
-        data=body,
-        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
-    )
-    client.parse_request_body_response(json.dumps(token_response.json()))
-    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-    uri, headers, body = client.add_token(userinfo_endpoint)
-    userinfo_response = requests.get(uri, headers=headers, data=body)
-    print(f"User Response Json: {userinfo_response.json()}")
-    if userinfo_response.json().get("email_verified"):
-        unique_id = userinfo_response.json()["sub"]
-        users_email = userinfo_response.json()["email"]
-        picture = userinfo_response.json()["picture"]
-        users_name = userinfo_response.json()["given_name"]
+    try:
+        code = request.args.get("code")
+        google_provider_cfg = get_google_cfg()
+        token_endpoint = google_provider_cfg["token_endpoint"]
+        ## comment for local
+        token_url, headers, body = client.prepare_token_request(
+            token_endpoint,
+            authorization_response=request.url,
+            redirect_url=request.base_url,
+            code=code
+        )
+        token_response = requests.post(
+            token_url,
+            headers=headers,
+            data=body,
+            auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+        )
+        client.parse_request_body_response(json.dumps(token_response.json()))
+        userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+        uri, headers, body = client.add_token(userinfo_endpoint)
+        userinfo_response = requests.get(uri, headers=headers, data=body)
+        if userinfo_response.json().get("email_verified"):
+            unique_id = userinfo_response.json()["sub"]
+            users_email = userinfo_response.json()["email"]
+            picture = userinfo_response.json()["picture"]
+            users_name = userinfo_response.json()["given_name"]
+        else:
+            return "User email not available or not verified by Google.", 400
+        user = User(id=unique_id,name=users_name,email=users_email,profile_pic=picture)
+        login_user(user)
+        r.set(user.id, save_user_in_cache(user))
+        return redirect(url_for('home_page'))
+    except RefreshError:
+        print("Error from Google trying again in callback")
+        time.sleep(2)
+        callback()
     else:
-        return "User email not available or not verified by Google.", 400
-    user = User(id=unique_id,name=users_name,email=users_email,profile_pic=picture)
-    login_user(user)
-    r.set(user.id, save_user_in_cache(user))
-    return redirect(url_for('home_page'))
+        print("Error from Google in callback")
+
+# @app.route('/old-login', methods=['GET', 'POST'])
+# def login_page():
+#     google_provider_cfg = get_google_cfg()
+#     print(f"google_provider_cfg: {google_provider_cfg}")
+#     authorization_endpoint = google_provider_cfg['authorization_endpoint']
+#     print(f"authorization_endpoint: {authorization_endpoint}")
+#     request_uri = client.prepare_request_uri(authorization_endpoint,
+#                                              redirect_uri=request.base_url + "/callback",
+#                                              scope=["openid", "email", "profile"])
+#     print(f"request uri: {request_uri}")
+#     return redirect(request_uri)
+#     login = LoginUserForm()
+#     if login.validate_on_submit():
+#         user = User.query.filter_by(email=login.email.data).first()
+#         if user:
+#             if check_password_hash(user.password, login.password.data):
+#                 login_user(user)
+#                 r.set(user.id, save_user_in_cache(user))
+#                 if session.get('number') is None:
+#                     return redirect(url_for('home_page'))
+#                 else:
+#                     number = session.get('number')
+#                     next =request.host_url+"blog/"+str(number)
+#                     return redirect(next or url_for('home_page'))
+#             else:
+#                 flash("Invalid username/password. Please try again!")
+#                 return redirect(url_for('login_page'))
+#         else:
+#             return redirect(url_for('register_page'))
+#     return render_template('login.html', login=login, is_logged_in=current_user.is_authenticated)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
-    google_provider_cfg = get_google_cfg()
-    print(f"google_provider_cfg: {google_provider_cfg}")
-    authorization_endpoint = google_provider_cfg['authorization_endpoint']
-    print(f"authorization_endpoint: {authorization_endpoint}")
-    request_uri = client.prepare_request_uri(authorization_endpoint,
-                                             redirect_uri=request.base_url + "/callback",
-                                             scope=["openid", "email", "profile"])
-    print(f"request uri: {request_uri}")
-    return redirect(request_uri)
-    # login = LoginUserForm()
-    # if login.validate_on_submit():
-    #     user = User.query.filter_by(email=login.email.data).first()
-    #     if user:
-    #         if check_password_hash(user.password, login.password.data):
-    #             login_user(user)
-    #             r.set(user.id, save_user_in_cache(user))
-    #             if session.get('number') is None:
-    #                 return redirect(url_for('home_page'))
-    #             else:
-    #                 number = session.get('number')
-    #                 next =request.host_url+"blog/"+str(number)
-    #                 return redirect(next or url_for('home_page'))
-    #         else:
-    #             flash("Invalid username/password. Please try again!")
-    #             return redirect(url_for('login_page'))
-    #     else:
-    #         return redirect(url_for('register_page'))
-    return render_template('login.html', login=login, is_logged_in=current_user.is_authenticated)
+    return render_template('login.html')
+
+@app.route('/login-google', methods=['GET', 'POST'])
+def google_login_page():
+    try:
+        google_provider_cfg = get_google_cfg()
+        authorization_endpoint = google_provider_cfg['authorization_endpoint']
+        request_uri = client.prepare_request_uri(authorization_endpoint,
+                                                 redirect_uri=request.base_url + "/callback",
+                                                 scope=["openid", "email", "profile"])
+        return redirect(request_uri)
+    except RefreshError:
+        print("Error from Google trying again")
+        time.sleep(2)
+        google_login_page()
+    else:
+        print("Error from Google try again")
 
 
 @app.route('/register', methods=['GET', 'POST'])
