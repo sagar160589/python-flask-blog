@@ -141,7 +141,7 @@ def callback():
         users_name = userinfo_response.json()["given_name"]
     else:
         return "User email not available or not verified by Google.", 400
-    user = User(id=unique_id,name=users_name,email=users_email)
+    user = User(id=unique_id,name=users_name,email=users_email,profile_pic=picture)
     login_user(user)
     r.set(user.id, save_user_in_cache(user))
     return redirect(url_for('home_page'))
@@ -316,12 +316,12 @@ def logout():
 
 
 def save_user_in_cache(user):
-    return json.dumps({'id': user.id, 'name': user.name, 'email': user.email})
+    return json.dumps({'id': user.id, 'name': user.name, 'email': user.email, 'profile_pic': user.profile_pic})
 
 
 def get_user_from_cache(user):
     user_des = json.loads(user)
-    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'])
+    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'], profile_pic=user_des['profile_pic'] )
 
 
 def save_blog_in_cache(all_blogs):
