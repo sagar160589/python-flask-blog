@@ -14,7 +14,7 @@ from flask_ckeditor import CKEditor
 from flask_gravatar import Gravatar
 
 from forms import LoginUserForm, UserForm, PostForm, CommentForm
-from models import db, Post, login_manager, User, Comment, User1
+from models import db, Post, login_manager, User, Comment
 
 app = Flask(__name__)
 
@@ -316,12 +316,12 @@ def logout():
 
 
 def save_user_in_cache(user):
-    return json.dumps({'id': user.id, 'name': user.name, 'email': user.email, 'password': user.password})
+    return json.dumps({'id': user.id, 'name': user.name, 'email': user.email})
 
 
 def get_user_from_cache(user):
     user_des = json.loads(user)
-    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'], password=user_des['password'])
+    return User(id=user_des['id'], name=user_des['name'], email=user_des['email'])
 
 
 def save_blog_in_cache(all_blogs):
