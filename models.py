@@ -25,7 +25,7 @@ class Post(db.Model):
 class User(UserMixin,db.Model):
     __tablename__ = 'user'
     id = db.Column(db.String(200), primary_key=True)
-    name = db.Column(db.String(150), unique=True,nullable=False)
+    name = db.Column(db.String(150),nullable=False)
     email = db.Column(db.String(100))
     profile_pic = db.Column(db.String())
     post = relationship("Post", back_populates="author")

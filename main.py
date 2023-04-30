@@ -20,14 +20,14 @@ app = Flask(__name__)
 
 with app.app_context():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    # app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+    #app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
     Bootstrap(app)
     CKEditor(app)
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DISCOVERY_URL = os.environ.get("GOOGLE_DISCOVERY_URL")
     r = redis.StrictRedis(host='red-cguk152ut4mcfrj3kha0', port=6379, db=0)
-    # r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    #r = redis.StrictRedis(host='localhost', port=6379, db=0)
     gravatar = Gravatar(app,
                         size=80,
                         rating='g',
@@ -43,7 +43,7 @@ with app.app_context():
                                   'postgresql://',
                                   1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
+    #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///post.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     login_manager.init_app(app)
@@ -132,9 +132,28 @@ def callback():
         users_name = userinfo_response.json()["given_name"]
     else:
         return "User email not available or not verified by Google.", 400
+    # userinfo_response = {'sub': '1175320090032023319191', 'name': 'Sagar Pandit', 'given_name': 'Sagar', 'family_name': 'Pandit', 'picture': 'https://lh3.googleusercontent.com/a/AGNmyxZkRcyrddeLxMCzrD1SxdhH1D9el9n5lDehQhCF=s96-c', 'email': 'sagar.pndt305@gmail.com', 'email_verified': True, 'locale': 'en'}
+    # if userinfo_response.get("email_verified"):
+    #     unique_id = userinfo_response["sub"]
+    #     users_email = userinfo_response["email"]
+    #     picture = userinfo_response["picture"]
+    #     users_name = userinfo_response["given_name"]
+    # else:
+    #     return "User email not available or not verified by Google.", 400
     user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
     login_user(user)
     r.set(user.id, save_user_in_cache(user))
+    user = User.query.filter_by(email=users_email).first()
+    if not user:
+        print("user not found adding it in DB")
+        new_user = User(
+            id=unique_id,
+            name=users_name,
+            email=users_email,
+            profile_pic=picture)
+
+        db.session.add(new_user)
+        db.session.commit()
     return redirect(url_for('home_page'))
 
 
